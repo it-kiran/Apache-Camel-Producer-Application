@@ -1,0 +1,34 @@
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.kafka.KafkaConstants;
+import org.springframework.stereotype.Component;
+
+@Component
+public class OracleDBToKafkaRouteBuilder extends RouteBuilder {
+
+@Override
+public void configure() throws Exception {
+
+// Configure Oracle DB endpoint
+String oracleDBEndpoint = "jdbc:oracle:thin:@localhost:1521:orcl";
+String oracleDBUser = "username";
+String oracleDBPassword = "password";
+String oracleDBTable = "mytable";
+String selectQuery = "SELECT * FROM " + oracleDBTable;
+
+// Configure Kafka endpoint
+String kafkaEndpoint = "kafka:my-topic?brokers=localhost:9092";
+String kafkaSerializer = "org.apache.kafka.common.serialization.StringSerializer";
+
+from("timer:oracleDBPoller?period=5000")
+
+// Read from Oracle DB
+.to("jdbc:" + oracleDBEndpoint + "?user=" + oracleDBUser + "&password=" + oracleDBPassword)
+.setBody(simple(selectQuery))
+.split(body())
+
+// Serialize to Kafka
+.setHeader(KafkaConstants.KEY, simple("${body.id}"))
+.marshal().string(kafkaSerializer)
+.to(kafkaEndpoint);
+}
+}
