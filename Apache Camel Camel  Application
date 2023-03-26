@@ -1,0 +1,33 @@
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.kafka.KafkaConstants;
+import org.springframework.stereotype.Component;
+
+@Component
+public class KafkaToOracleDBRouteBuilder extends RouteBuilder {
+
+@Override
+public void configure() throws Exception {
+
+// Configure Kafka endpoint
+String kafkaEndpoint = "kafka:my-topic?brokers=localhost:9092";
+String kafkaDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+
+// Configure Oracle DB endpoint
+String oracleDBEndpoint = "jdbc:oracle:thin:@localhost:1521:orcl";
+String oracleDBUser = "username";
+String oracleDBPassword = "password";
+String oracleDBTable = "mytable";
+
+from(kafkaEndpoint)
+
+// Deserialize from Kafka
+.unmarshal().string(kafkaDeserializer)
+.split(body().tokenize("\n"))
+
+// Write to Oracle DB
+.to("jdbc:" + oracleDBEndpoint + "?user=" + oracleDBUser + "&password=" + oracleDBPassword)
+.setBody(simple("INSERT INTO " + oracleDBTable + " VALUES(${body})"))
+.to("jdbc:" + oracleDBEndpoint + "?user=" + oracleDBUser + "&password=" + oracleDBPassword);
+}
+}
+
