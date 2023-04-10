@@ -1,0 +1,5 @@
+CREATE TABLE popular_products_by_region AS
+SELECT region, productId, COUNT(*) AS num_clicks
+FROM click_stream
+GROUP BY region, productId
+EMIT CHANGES;
